@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { uploadFile } from "../src/services/upload";
 
 type ModelOption = {
   id: "gpt-5.1" | "gpt-5.2";
@@ -21,22 +22,27 @@ const MODELS: ModelOption[] = [
   { id: "gpt-5.2", title: "OpenAI ChatGPT", version: "5.2" },
 ];
 
+type UploadStatus = "idle" | "uploading" | "success" | "failed";
+
 export default function UploadScreen() {
   const [activeTab, setActiveTab] = useState<"files" | "videos">("files");
   const [selectedModel, setSelectedModel] = useState<ModelOption["id"] | null>(
     null
   );
-  const [pickedName, setPickedName] = useState<string | null>(null);
+
+  // Store the picked asset (so we have uri/mime/name for upload)
+  const [picked, setPicked] =
+    useState<DocumentPicker.DocumentPickerAsset | null>(null);
+
+  const [status, setStatus] = useState<UploadStatus>("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const canContinue = useMemo(() => {
-    // In your mock, button looks disabled. You can require a file too if you want:
-    // return Boolean(selectedModel && pickedName);
-    return Boolean(selectedModel);
-  }, [selectedModel]);
+    // Require BOTH model + file picked (recommended)
+    return Boolean(selectedModel && picked) && status !== "uploading";
+  }, [selectedModel, picked, status]);
 
   async function pickSomething() {
-    // NOTE: Expo DocumentPicker can pick files. For videos, this can still work
-    // depending on platform, but if you want camera roll videos, use expo-image-picker.
     const result = await DocumentPicker.getDocumentAsync({
       multiple: false,
       copyToCacheDirectory: true,
@@ -51,19 +57,43 @@ export default function UploadScreen() {
     });
 
     if (result.canceled) return;
+
     const asset = result.assets[0];
-    setPickedName(asset.name ?? "Selected item");
+    setPicked(asset);
+
+    // Reset status when a new file is picked
+    setStatus("idle");
+    setErrorMsg(null);
   }
 
-  function handleContinue() {
+  async function handleContinue() {
     if (!selectedModel) {
       Alert.alert("Choose a model first");
       return;
     }
-    Alert.alert(
-      "Continue",
-      `Model: ${selectedModel}\nPicked: ${pickedName ?? "(none yet)"}`
-    );
+
+    if (!picked) {
+      Alert.alert("Pick a file first");
+      return;
+    }
+
+    try {
+      setStatus("uploading");
+      setErrorMsg(null);
+
+      await uploadFile({
+        uri: picked.uri,
+        name: picked.name ?? "upload.bin",
+        mimeType: picked.mimeType ?? "application/octet-stream",
+      });
+
+      setStatus("success");
+      Alert.alert("Upload successful ✅");
+    } catch (e: any) {
+      setStatus("failed");
+      setErrorMsg(e?.message ?? "Upload failed");
+      Alert.alert("Upload failed ❌", e?.message ?? "Unknown error");
+    }
   }
 
   return (
@@ -78,12 +108,23 @@ export default function UploadScreen() {
 
       {/* Upload area */}
       <View style={styles.cardBlock}>
-        <View style={styles.uploadCard}>
+        <View
+          style={[
+            styles.uploadCard,
+            status === "uploading" && styles.uploadUploading,
+            status === "success" && styles.uploadSuccess,
+            status === "failed" && styles.uploadFailed,
+          ]}
+        >
           {/* tab pill */}
           <View style={styles.tabRow}>
             <View style={styles.tabSpacer} />
+
+            {/* Optional: let user tap to switch to videos */}
             <Pressable
-              onPress={() => setActiveTab("videos")}
+              onPress={() =>
+                setActiveTab((t) => (t === "files" ? "videos" : "files"))
+              }
               style={[
                 styles.tabPill,
                 activeTab === "videos" ? styles.tabPillActive : null,
@@ -95,15 +136,31 @@ export default function UploadScreen() {
                   activeTab === "videos" ? styles.tabTextActive : null,
                 ]}
               >
-                Upload videos
+                {activeTab === "videos" ? "Upload videos" : "Upload files"}
               </Text>
             </Pressable>
           </View>
 
           <Pressable onPress={pickSomething} style={styles.uploadInner}>
-            <Text style={styles.uploadText}>Upload files</Text>
-            {pickedName ? (
-              <Text style={styles.pickedText}>{pickedName}</Text>
+            <Text style={styles.uploadText}>
+              {activeTab === "videos" ? "Upload videos" : "Upload files"}
+            </Text>
+
+            {picked?.name ? (
+              <Text style={styles.pickedText}>{picked.name}</Text>
+            ) : null}
+
+            {status === "uploading" ? (
+              <Text style={styles.statusText}>Uploading…</Text>
+            ) : status === "success" ? (
+              <Text style={styles.statusText}>Upload successful ✅</Text>
+            ) : status === "failed" ? (
+              <>
+                <Text style={styles.statusText}>Upload failed ❌</Text>
+                {errorMsg ? (
+                  <Text style={styles.errorText}>{errorMsg}</Text>
+                ) : null}
+              </>
             ) : null}
           </Pressable>
         </View>
@@ -125,7 +182,6 @@ export default function UploadScreen() {
               ]}
             >
               <View style={styles.modelIcon}>
-                {/* Placeholder for the OpenAI logo */}
                 <Text style={styles.modelIconText}>◎</Text>
               </View>
 
@@ -142,7 +198,10 @@ export default function UploadScreen() {
       <Pressable
         onPress={handleContinue}
         disabled={!canContinue}
-        style={[styles.continueBtn, !canContinue ? styles.continueDisabled : null]}
+        style={[
+          styles.continueBtn,
+          !canContinue ? styles.continueDisabled : null,
+        ]}
       >
         <Text
           style={[
@@ -201,10 +260,29 @@ const styles = StyleSheet.create({
   uploadCard: {
     height: 210,
     borderRadius: 16,
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "#E6E6E6",
     overflow: "hidden",
     position: "relative",
+    borderWidth: 2,
+    borderColor: "transparent",
   },
+
+  uploadUploading: { borderColor: "#777" },
+  uploadSuccess: { borderColor: "#1f7a1f" },
+  uploadFailed: { borderColor: "#b00020" },
+
+  statusText: {
+    marginTop: 10,
+    fontWeight: "600",
+    color: "#222",
+  },
+  errorText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: "#b00020",
+    textAlign: "center",
+  },
+
   tabRow: {
     position: "absolute",
     top: 10,
@@ -257,14 +335,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "#E6E6E6",
     borderRadius: 14,
     padding: 14,
     borderWidth: 2,
     borderColor: "transparent",
   },
   modelCardSelected: {
-    borderColor: "#111",
+    borderColor: "#05C925",
+    backgroundColor: "#E9FBEF",
   },
   modelIcon: {
     width: 42,
@@ -284,13 +363,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: "#CFCFCF",
+    backgroundColor: "#04B120",
   },
   continueDisabled: {
-    opacity: 0.7,
+    opacity: 0.4,
   },
-  continueText: { fontWeight: "700", color: "#FFF" },
-  continueTextDisabled: { color: "#F5F5F5" },
+  continueText: { fontWeight: "500", color: "#FFF" },
+  continueTextDisabled: { color: "#FFF" },
 
   bottomNav: {
     marginTop: "auto",
