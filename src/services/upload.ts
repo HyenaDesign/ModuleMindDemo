@@ -1,14 +1,7 @@
-type UploadInput = {
-  uri: string;
-  name: string;
-  mimeType: string;
-};
+type UploadInput = { uri: string; name: string; mimeType: string };
 
-/**
- * DEMO upload: sends a file as multipart/form-data.
- * Replace UPLOAD_URL with your backend endpoint later.
- */
-const UPLOAD_URL = "https://httpbin.org/post"; // demo endpoint
+// CHANGE THIS depending on device:
+const UPLOAD_URL = "http://192.168.0.254:4000/upload"; // <-- your PC IP
 
 export async function uploadFile(file: UploadInput) {
   const form = new FormData();
@@ -21,13 +14,13 @@ export async function uploadFile(file: UploadInput) {
   const res = await fetch(UPLOAD_URL, {
     method: "POST",
     body: form,
-    // NOTE: don't manually set Content-Type for FormData in RN
   });
 
+  const json = await res.json().catch(() => null);
+
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Upload failed (${res.status}). ${text}`);
+    throw new Error(json?.error ?? `Upload failed (${res.status})`);
   }
 
-  return res.json();
+  return json; // { ok, filename, chars, quiz }
 }

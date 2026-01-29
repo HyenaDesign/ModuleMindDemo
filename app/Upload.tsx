@@ -30,19 +30,22 @@ export default function UploadScreen() {
     null
   );
 
-  // Store the picked asset (so we have uri/mime/name for upload)
   const [picked, setPicked] =
     useState<DocumentPicker.DocumentPickerAsset | null>(null);
 
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // ✅ move debug state INSIDE the component
+  const [debugJson, setDebugJson] = useState<string>("");
+
   const canContinue = useMemo(() => {
-    // Require BOTH model + file picked (recommended)
     return Boolean(selectedModel && picked) && status !== "uploading";
   }, [selectedModel, picked, status]);
 
   async function pickSomething() {
+    setDebugJson("");
+
     const result = await DocumentPicker.getDocumentAsync({
       multiple: false,
       copyToCacheDirectory: true,
@@ -61,7 +64,6 @@ export default function UploadScreen() {
     const asset = result.assets[0];
     setPicked(asset);
 
-    // Reset status when a new file is picked
     setStatus("idle");
     setErrorMsg(null);
   }
@@ -80,18 +82,22 @@ export default function UploadScreen() {
     try {
       setStatus("uploading");
       setErrorMsg(null);
+      setDebugJson("");
 
-      await uploadFile({
+      // ✅ call uploadFile ONCE and keep the result
+      const result = await uploadFile({
         uri: picked.uri,
         name: picked.name ?? "upload.bin",
         mimeType: picked.mimeType ?? "application/octet-stream",
       });
 
       setStatus("success");
+      setDebugJson(JSON.stringify(result, null, 2));
       Alert.alert("Upload successful ✅");
     } catch (e: any) {
       setStatus("failed");
       setErrorMsg(e?.message ?? "Upload failed");
+      setDebugJson(e?.message ?? "Upload failed");
       Alert.alert("Upload failed ❌", e?.message ?? "Unknown error");
     }
   }
@@ -116,11 +122,8 @@ export default function UploadScreen() {
             status === "failed" && styles.uploadFailed,
           ]}
         >
-          {/* tab pill */}
           <View style={styles.tabRow}>
             <View style={styles.tabSpacer} />
-
-            {/* Optional: let user tap to switch to videos */}
             <Pressable
               onPress={() =>
                 setActiveTab((t) => (t === "files" ? "videos" : "files"))
@@ -213,6 +216,16 @@ export default function UploadScreen() {
         </Text>
       </Pressable>
 
+      {/* ✅ Debug JSON output */}
+      {debugJson ? (
+        <View style={styles.debugBox}>
+          <Text style={styles.debugTitle}>Debug JSON</Text>
+          <Text selectable style={styles.debugText}>
+            {debugJson}
+          </Text>
+        </View>
+      ) : null}
+
       {/* Bottom nav */}
       <View style={styles.bottomNav}>
         <Pressable style={styles.navItem}>
@@ -267,9 +280,9 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
   },
 
-  uploadUploading: { borderColor: "#777" },
-  uploadSuccess: { borderColor: "#1f7a1f" },
-  uploadFailed: { borderColor: "#b00020" },
+  uploadUploading: { borderColor: "#FFDF0D", backgroundColor: "#FFF8CC" },
+  uploadSuccess: { borderColor: "#05C925", backgroundColor: "#E9FBEF" },
+  uploadFailed: { borderColor: "#E54848", backgroundColor: "#FDECEC" },
 
   statusText: {
     marginTop: 10,
@@ -279,7 +292,7 @@ const styles = StyleSheet.create({
   errorText: {
     marginTop: 6,
     fontSize: 12,
-    color: "#b00020",
+    color: "#E54848",
     textAlign: "center",
   },
 
@@ -370,6 +383,23 @@ const styles = StyleSheet.create({
   },
   continueText: { fontWeight: "500", color: "#FFF" },
   continueTextDisabled: { color: "#FFF" },
+
+  // ✅ debug styles
+  debugBox: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#F3F3F3",
+    maxHeight: 260,
+  },
+  debugTitle: {
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  debugText: {
+    fontSize: 12,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+  },
 
   bottomNav: {
     marginTop: "auto",
