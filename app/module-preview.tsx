@@ -39,14 +39,18 @@ export default function ModulePreviewScreen() {
         // Transform quiz data to Question format
         if (quizData && Array.isArray(quizData) && quizData.length > 0) {
           console.log("Quiz data:", quizData);
-          return quizData.map((q, idx) => ({
-            id: q.id || `q${idx + 1}`,
-            type: q.type || (q.choices ? "multiple_choice" : "open"),
-            question: q.question || q.text || "",
-            options: q.choices || q.options || [],
-            answer: q.answer || q.correct_answer || "",
-            explanation: q.explanation || "",
-          }));
+          console.log("First question:", quizData[0]);
+          return quizData.map((q, idx) => {
+            const answer = q.answer || q.correct_answer || q.answerIndex || q.correctAnswer || "";
+            return {
+              id: q.id || `q${idx + 1}`,
+              type: q.type || (q.choices ? "multiple_choice" : "open"),
+              question: q.question || q.text || "",
+              options: q.choices || q.options || q.answers || [],
+              answer: answer,
+              explanation: q.explanation || q.explanations || "",
+            };
+          });
         }
       } catch (e) {
         console.log("Parse error:", e);
@@ -137,14 +141,36 @@ export default function ModulePreviewScreen() {
           {current.type === "multiple_choice" &&
           current.options?.length ? (
             <View style={styles.optionsBlock}>
-              {current.options.map((opt) => (
-                <View key={opt} style={styles.optionRow}>
-                  <View style={styles.optionCircle} />
-                  <Text style={styles.optionText}>
-                    {opt}
-                  </Text>
-                </View>
-              ))}
+              {current.options.map((opt) => {
+                const isCorrect = opt === current.answer;
+                return (
+                  <View
+                    key={opt}
+                    style={[
+                      styles.optionRow,
+                      isCorrect && styles.optionRowCorrect,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.optionCircle,
+                        isCorrect && styles.optionCircleCorrect,
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.optionText,
+                        isCorrect && styles.optionTextCorrect,
+                      ]}
+                    >
+                      {opt}
+                    </Text>
+                    {isCorrect && (
+                      <Text style={styles.checkmark}>✓</Text>
+                    )}
+                  </View>
+                );
+              })}
             </View>
           ) : null}
 
@@ -295,6 +321,28 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: "#111",
+  },
+
+  optionRowCorrect: {
+    backgroundColor: "#E9FBEF",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+  },
+
+  optionCircleCorrect: {
+    borderColor: "#05C925",
+    backgroundColor: "#05C925",
+  },
+
+  optionTextCorrect: {
+    color: "#05C925",
+    fontWeight: "600",
+  },
+
+  checkmark: {
+    fontSize: 18,
+    color: "#05C925",
+    fontWeight: "700",
   },
 
   answerBox: {

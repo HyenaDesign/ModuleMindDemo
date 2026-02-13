@@ -1,15 +1,29 @@
 type UploadInput = { uri: string; name: string; mimeType: string };
 
-// CHANGE THIS depending on device:
-const UPLOAD_URL = "http://192.168.0.254:4000/upload"; // <-- your PC IP
+// Load from environment variable (set in .env file)
+// Each collaborator can set their own server URL in .env
+const UPLOAD_URL = process.env.EXPO_PUBLIC_UPLOAD_URL || "http://localhost:4000/upload";
 
 export async function uploadFile(file: UploadInput) {
   const form = new FormData();
-  form.append("file", {
-    uri: file.uri,
-    name: file.name,
-    type: file.mimeType,
-  } as any);
+  
+  // On web, uri is a File/Blob; on mobile it's a file:// path
+  if (typeof file.uri === 'string' && file.uri.startsWith('file://')) {
+    // Mobile: use the URI directly with the file name and type
+    form.append("file", {
+      uri: file.uri,
+      name: file.name,
+      type: file.mimeType,
+    } as any);
+  } else if (typeof file.uri === 'string') {
+    // Web (blob URL): fetch and convert to blob
+    const response = await fetch(file.uri);
+    const blob = await response.blob();
+    form.append("file", blob, file.name);
+  } else {
+    // Web (File object)
+    form.append("file", file.uri as any, file.name);
+  }
 
   const res = await fetch(UPLOAD_URL, {
     method: "POST",
