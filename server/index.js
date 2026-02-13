@@ -4,7 +4,6 @@ const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const fs = require("fs");
-const pdfParse = require("pdf-parse");
 const mammoth = require("mammoth");
 
 const OpenAI = require("openai");
@@ -31,7 +30,9 @@ async function extractTextFromFile(file) {
   const name = (file.originalname || "").toLowerCase();
 
   if (name.endsWith(".pdf")) {
-    const data = await pdfParse(fs.readFileSync(file.path));
+    const buffer = fs.readFileSync(file.path);
+    const pdfParse = require("pdf-parse");
+    const data = await pdfParse(buffer);
     return cleanAndClamp(data.text);
   }
 

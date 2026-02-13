@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
+import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   Alert,
@@ -25,6 +26,7 @@ const MODELS: ModelOption[] = [
 type UploadStatus = "idle" | "uploading" | "success" | "failed";
 
 export default function UploadScreen() {
+    const router = useRouter();
   const [activeTab, setActiveTab] = useState<"files" | "videos">("files");
   const [selectedModel, setSelectedModel] = useState<ModelOption["id"] | null>(
     null
@@ -94,6 +96,12 @@ export default function UploadScreen() {
       setStatus("success");
       setDebugJson(JSON.stringify(result, null, 2));
       Alert.alert("Upload successful ✅");
+      console.log("Upload result:", result);
+      router.push({
+        pathname: "/module-preview",
+        params: { result: JSON.stringify(result) },
+      });
+
     } catch (e: any) {
       setStatus("failed");
       setErrorMsg(e?.message ?? "Upload failed");
