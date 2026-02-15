@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 type Question = {
   id: string;
@@ -9,6 +9,7 @@ type Question = {
   options?: string[];
   answer?: string;
   explanation?: string;
+  image?: string;
 };
 
 export default function ModulePreviewScreen() {
@@ -22,26 +23,39 @@ export default function ModulePreviewScreen() {
     if (resultJson) {
       try {
         const parsed = JSON.parse(resultJson);
+        console.log("Parsed result:", parsed);
         
         let quizData = null;
+        let images: string[] = [];
+        
         if (Array.isArray(parsed)) {
           quizData = parsed;
         } else if (Array.isArray(parsed?.questions)) {
           quizData = parsed.questions;
+          images = parsed.images || [];
         } else if (Array.isArray(parsed?.quiz)) {
           quizData = parsed.quiz;
+          images = parsed.images || [];
         } else if (Array.isArray(parsed?.quiz?.questions)) {
           quizData = parsed.quiz.questions;
+          images = parsed.images || [];
         } else if (parsed?.quiz && typeof parsed.quiz === 'object') {
           quizData = Array.isArray(parsed.quiz) ? parsed.quiz : [parsed.quiz];
+          images = parsed.images || [];
         }
 
         // Transform quiz data to Question format
         if (quizData && Array.isArray(quizData) && quizData.length > 0) {
           console.log("Quiz data:", quizData);
-          console.log("First question:", quizData[0]);
+          console.log("Images array:", images);
+          console.log("Images length:", images.length);
           return quizData.map((q, idx) => {
             const answer = q.answer || q.correct_answer || q.answerIndex || q.correctAnswer || "";
+            // Distribute images across questions
+            const image = images[idx % images.length] || undefined;
+            const imageUri = image ? `data:image/jpeg;base64,${image}` : undefined;
+            console.log(`Question ${idx}: has image = ${!!image}`);
+            
             return {
               id: q.id || `q${idx + 1}`,
               type: q.type || (q.choices ? "multiple_choice" : "open"),
@@ -49,6 +63,7 @@ export default function ModulePreviewScreen() {
               options: q.choices || q.options || q.answers || [],
               answer: answer,
               explanation: q.explanation || q.explanations || "",
+              image: imageUri,
             };
           });
         }
@@ -138,6 +153,14 @@ export default function ModulePreviewScreen() {
             {current.question}
           </Text>
 
+          {current.image ? (
+            <Image
+              source={{ uri: current.image }}
+              style={styles.questionImage}
+              resizeMode="contain"
+            />
+          ) : null}
+
           {current.type === "multiple_choice" &&
           current.options?.length ? (
             <View style={styles.optionsBlock}>
@@ -225,11 +248,36 @@ export default function ModulePreviewScreen() {
 
         <View style={styles.bottomActions}>
           <Pressable
-            style={styles.primaryBtn}
+            style={styles.backBtn}
             onPress={() => router.back()}
           >
-            <Text style={styles.primaryText}>
+            <Text style={styles.backBtnText}>
               Back to upload
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.publishBtn}
+            onPress={() => {
+              const filename = typeof params.result === "string" 
+                ? (() => {
+                    try {
+                      const parsed = JSON.parse(params.result);
+                      return parsed.filename || "Module";
+                    } catch {
+                      return "Module";
+                    }
+                  })()
+                : "Module";
+
+              router.push({
+                pathname: "/publish-module",
+                params: { title: filename },
+              });
+            }}
+          >
+            <Text style={styles.publishBtnText}>
+              Publish module
             </Text>
           </Pressable>
         </View>
@@ -248,30 +296,30 @@ const styles = StyleSheet.create({
   profileCircle: {
     position: "absolute",
     top: 50,
-    right: 18,
+    right: 20,
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "#1ECB7F",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 10,
   },
-  profileText: { fontWeight: "600", color: "#111" },
+  profileText: { fontWeight: "600", color: "#FFF" },
 
   editButton: {
     position: "absolute",
     top: 52,
-    left: 18,
+    left: 20,
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: "#E5E5E5",
+    backgroundColor: "#F0F0F0",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 10,
   },
-  editIcon: { fontSize: 16, color: "#111" },
+  editIcon: { fontSize: 16, color: "#333" },
 
   card: {
     marginTop: 120,
@@ -288,60 +336,71 @@ const styles = StyleSheet.create({
 
   questionCard: {
     borderRadius: 18,
-    backgroundColor: "#E6E6E6",
-    padding: 14,
+    backgroundColor: "#F5F5F5",
+    padding: 16,
   },
 
   questionText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
     color: "#111",
   },
 
+  questionImage: {
+    width: "100%",
+    height: 200,
+    marginVertical: 14,
+    borderRadius: 12,
+    backgroundColor: "#E8E8E8",
+  },
+
   optionsBlock: {
-    marginTop: 14,
+    marginTop: 16,
     gap: 12,
   },
 
   optionRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
 
   optionCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
-    borderColor: "#777",
+    borderColor: "#CCC",
   },
 
   optionText: {
     flex: 1,
-    fontSize: 13,
-    color: "#111",
+    fontSize: 14,
+    color: "#333",
   },
 
   optionRowCorrect: {
-    backgroundColor: "#E9FBEF",
-    borderRadius: 8,
-    paddingHorizontal: 8,
+    backgroundColor: "#E8F8F3",
+    borderRadius: 12,
+    paddingHorizontal: 12,
   },
 
   optionCircleCorrect: {
-    borderColor: "#05C925",
-    backgroundColor: "#05C925",
+    borderColor: "#1ECB7F",
+    backgroundColor: "#1ECB7F",
   },
 
   optionTextCorrect: {
-    color: "#05C925",
+    color: "#1ECB7F",
     fontWeight: "600",
   },
 
   checkmark: {
     fontSize: 18,
-    color: "#05C925",
+    color: "#1ECB7F",
     fontWeight: "700",
   },
 
@@ -376,31 +435,49 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "#F0F0F0",
     alignItems: "center",
   },
 
-  btnDisabled: { opacity: 0.45 },
+  btnDisabled: { opacity: 0.5 },
 
   btnText: {
-    color: "#111",
+    color: "#333",
     fontWeight: "700",
+    fontSize: 15,
   },
 
   bottomActions: {
-    marginTop: 22,
+    marginTop: 24,
     gap: 12,
+    flexDirection: "row",
   },
 
-  primaryBtn: {
+  backBtn: {
+    flex: 1,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: "#E5E5E5",
+    backgroundColor: "#F0F0F0",
     alignItems: "center",
   },
 
-  primaryText: {
-    color: "#111",
+  backBtnText: {
+    color: "#333",
     fontWeight: "700",
+    fontSize: 15,
+  },
+
+  publishBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#1ECB7F",
+    alignItems: "center",
+  },
+
+  publishBtnText: {
+    color: "#FFF",
+    fontWeight: "700",
+    fontSize: 15,
   },
 });
