@@ -302,40 +302,40 @@ export default function UploadScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
-    paddingHorizontal: 20,
+    backgroundColor: "#FFF",
+    paddingHorizontal: 18,
     paddingTop: 40,
   },
 
   topBar: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 18,
   },
   avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#1ECB7F",
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#E6E6E6",
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { fontWeight: "700", color: "#FFF", fontSize: 16 },
+  avatarText: { fontWeight: "700", color: "#444" },
 
   cardBlock: { marginBottom: 18 },
   uploadCard: {
     height: 210,
-    borderRadius: 20,
-    backgroundColor: "#F0F0F0",
+    borderRadius: 16,
+    backgroundColor: "#E6E6E6",
     overflow: "hidden",
     position: "relative",
     borderWidth: 2,
     borderColor: "transparent",
   },
 
-  uploadUploading: { borderColor: "#FFD700", backgroundColor: "#FFFAEB" },
-  uploadSuccess: { borderColor: "#1ECB7F", backgroundColor: "#E8F8F3" },
-  uploadFailed: { borderColor: "#FF6B6B", backgroundColor: "#FFE8E8" },
+  uploadUploading: { borderColor: "#FFDF0D", backgroundColor: "#FFF8CC" },
+  uploadSuccess: { borderColor: "#05C925", backgroundColor: "#E9FBEF" },
+  uploadFailed: { borderColor: "#E54848", backgroundColor: "#FDECEC" },
 
   statusText: {
     marginTop: 10,
@@ -401,15 +401,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#F5F5F5",
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: "#E6E6E6",
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 2,
-    borderColor: "#E0E0E0",
+    borderColor: "transparent",
   },
   modelCardSelected: {
-    borderColor: "#1ECB7F",
-    backgroundColor: "#E8F8F3",
+    borderColor: "#05C925",
+    backgroundColor: "#E9FBEF",
   },
   modelIcon: {
     width: 42,
@@ -425,16 +425,16 @@ const styles = StyleSheet.create({
 
   continueBtn: {
     alignSelf: "flex-end",
-    marginTop: 16,
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: "#1ECB7F",
+    marginTop: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: "#04B120",
   },
   continueDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
-  continueText: { fontWeight: "600", color: "#FFF", fontSize: 15 },
+  continueText: { fontWeight: "500", color: "#FFF" },
   continueTextDisabled: { color: "#FFF" },
 
   // ✅ debug styles
@@ -509,13 +509,11 @@ const styles = StyleSheet.create({
 
   bottomNav: {
     marginTop: "auto",
-    paddingTop: 16,
-    paddingBottom: 20,
+    paddingTop: 14,
+    paddingBottom: 16,
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "space-between",
-    borderTopWidth: 1,
-    borderTopColor: "#E8E8E8",
   },
   navItem: {
     width: 64,
@@ -532,7 +530,7 @@ const styles = StyleSheet.create({
     height: 58,
     borderRadius: 16,
     borderWidth: 2.5,
-    borderColor: "#1ECB7F",
+    borderColor: "#111",
     alignItems: "center",
     justifyContent: "center",
   },
