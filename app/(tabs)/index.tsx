@@ -1,5 +1,5 @@
-import { Redirect } from "expo-router";
+import UploadScreen from "../Upload";
 
 export default function Index() {
-  return <Redirect href="/Upload" />;
+  return <UploadScreen />;
 }
