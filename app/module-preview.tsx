@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type Question = {
@@ -41,7 +41,11 @@ export default function ModulePreviewScreen() {
           console.log("Quiz data:", quizData);
           console.log("First question:", quizData[0]);
           return quizData.map((q, idx) => {
-            const answer = q.answer || q.correct_answer || q.answerIndex || q.correctAnswer || "";
+            let answer = q.answer || q.correct_answer || q.correctAnswer || "";
+            if (q.answerIndex !== undefined && q.answerIndex !== null) {
+              const choices = q.choices || q.options || q.answers || [];
+              answer = choices[q.answerIndex] || "";
+            }
             return {
               id: q.id || `q${idx + 1}`,
               type: q.type || (q.choices ? "multiple_choice" : "open"),
