@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
     Alert,
     Platform,
@@ -59,13 +59,34 @@ export default function UploadScreen() {
   // ✅ move debug state INSIDE the component
   const [debugJson, setDebugJson] = useState<string>("");
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const canContinue = useMemo(() => {
     return Boolean(selectedModel && picked) && status !== "uploading";
   }, [selectedModel, picked, status]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPicked({
+        uri: URL.createObjectURL(file),
+        name: file.name,
+        mimeType: file.type,
+        size: file.size,
+      });
+      setStatus("idle");
+      setErrorMsg(null);
+    }
+  };
+
   async function pickSomething() {
     setDebugJson("");
     setErrorMsg(null);
+
+    if (Platform.OS === "web") {
+      fileInputRef.current?.click();
+      return;
+    }
 
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -301,6 +322,17 @@ export default function UploadScreen() {
           <Ionicons name="person-outline" size={28} color="#111" />
         </Pressable>
       </View>
+
+      {/* Hidden file input for web */}
+      {Platform.OS === "web" && (
+        <input
+          type="file"
+          ref={fileInputRef}
+          style={{ display: "none" }}
+          onChange={handleFileChange}
+          accept={activeTab === "videos" ? "video/*" : "*/*"}
+        />
+      )}
     </View>
   );
 }
