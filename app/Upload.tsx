@@ -198,65 +198,36 @@ export default function UploadScreen() {
             </Pressable>
           </View>
 
-          {Platform.OS === "web" ? (
-            <>
-              <button
-                type="button"
-                onClick={pickSomething}
-                style={styles.webUploadButton as any}
-              >
-                <Text style={styles.uploadText}>
-                  {activeTab === "videos" ? "Upload videos" : "Upload files"}
-                </Text>
+          <Pressable onPress={pickSomething} style={styles.uploadInner}>
+            <Text style={styles.uploadText}>
+              {activeTab === "videos" ? "Upload videos" : "Upload files"}
+            </Text>
 
-                {picked?.name ? (
-                  <Text style={styles.pickedText}>{picked.name}</Text>
+            {picked?.name ? (
+              <Text style={styles.pickedText}>{picked.name}</Text>
+            ) : null}
+
+            {status === "uploading" ? (
+              <Text style={styles.statusText}>Uploading…</Text>
+            ) : status === "success" ? (
+              <Text style={styles.statusText}>Upload successful ✅</Text>
+            ) : status === "failed" ? (
+              <>
+                <Text style={styles.statusText}>Upload failed ❌</Text>
+                {errorMsg ? (
+                  <Text style={styles.errorText}>{errorMsg}</Text>
                 ) : null}
-
-                {status === "uploading" ? (
-                  <Text style={styles.statusText}>Uploading…</Text>
-                ) : status === "success" ? (
-                  <Text style={styles.statusText}>Upload successful ✅</Text>
-                ) : status === "failed" ? (
-                  <>
-                    <Text style={styles.statusText}>Upload failed ❌</Text>
-                    {errorMsg ? (
-                      <Text style={styles.errorText}>{errorMsg}</Text>
-                    ) : null}
-                  </>
-                ) : null}
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                style={{ display: "none" }}
-                onChange={handleFileChange}
-                accept={activeTab === "videos" ? "video/*" : "*/*"}
-              />
-            </>
-          ) : (
-            <Pressable onPress={pickSomething} style={styles.uploadInner}>
-              <Text style={styles.uploadText}>
-                {activeTab === "videos" ? "Upload videos" : "Upload files"}
-              </Text>
-
-              {picked?.name ? (
-                <Text style={styles.pickedText}>{picked.name}</Text>
-              ) : null}
-
-              {status === "uploading" ? (
-                <Text style={styles.statusText}>Uploading…</Text>
-              ) : status === "success" ? (
-                <Text style={styles.statusText}>Upload successful ✅</Text>
-              ) : status === "failed" ? (
-                <>
-                  <Text style={styles.statusText}>Upload failed ❌</Text>
-                  {errorMsg ? (
-                    <Text style={styles.errorText}>{errorMsg}</Text>
-                  ) : null}
-                </>
-              ) : null}
-            </Pressable>
+              </>
+            ) : null}
+          </Pressable>
+          {Platform.OS === "web" && (
+            <input
+              ref={fileInputRef}
+              type="file"
+              style={{ display: "none" }}
+              onChange={handleFileChange}
+              accept={activeTab === "videos" ? "video/*" : "*/*"}
+            />
           )}
         </View>
       </View>
@@ -267,23 +238,7 @@ export default function UploadScreen() {
       <View style={styles.modelList}>
         {MODELS.map((m) => {
           const selected = selectedModel === m.id;
-          return Platform.OS === "web" ? (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setSelectedModel(m.id)}
-              style={Object.assign({}, styles.modelCard as any, selected ? styles.modelCardSelected : {})}
-            >
-              <span style={styles.modelIcon as any}>
-                <Text style={styles.modelIconText}>◎</Text>
-              </span>
-
-              <span style={{ flex: 1 }}>
-                <Text style={styles.modelTitle}>{m.title}</Text>
-                <Text style={styles.modelSub}>{m.version}</Text>
-              </span>
-            </button>
-          ) : (
+          return (
             <Pressable
               key={m.id}
               onPress={() => setSelectedModel(m.id)}
@@ -306,38 +261,23 @@ export default function UploadScreen() {
       </View>
 
       {/* Continue button */}
-      {Platform.OS === "web" ? (
-        <button
-          type="button"
-          onClick={handleContinue}
-          disabled={!canContinue}
-          style={Object.assign({}, styles.continueBtn as any, !canContinue ? styles.continueDisabled : {})}
-        >
-          <Text
-            style={Object.assign({}, styles.continueText as any, !canContinue ? styles.continueTextDisabled : {})}
-          >
-            Doorgaan
-          </Text>
-        </button>
-      ) : (
-        <Pressable
-          onPress={handleContinue}
-          disabled={!canContinue}
+      <Pressable
+        onPress={handleContinue}
+        disabled={!canContinue}
+        style={[
+          styles.continueBtn,
+          !canContinue ? styles.continueDisabled : null,
+        ]}
+      >
+        <Text
           style={[
-            styles.continueBtn,
-            !canContinue ? styles.continueDisabled : null,
+            styles.continueText,
+            !canContinue ? styles.continueTextDisabled : null,
           ]}
         >
-          <Text
-            style={[
-              styles.continueText,
-              !canContinue ? styles.continueTextDisabled : null,
-            ]}
-          >
-            Doorgaan
-          </Text>
-        </Pressable>
-      )}
+          Doorgaan
+        </Text>
+      </Pressable>
 
       {/* ✅ Debug JSON output */}
       {debugJson ? (
@@ -485,17 +425,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     minHeight: 180,
     cursor: "pointer",
-  },
-  webUploadButton: {
-    width: "100%",
-    borderWidth: 0,
-    backgroundColor: "transparent",
-    padding: 0,
-    cursor: "pointer",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 180,
   },
   uploadText: { color: "#2E2E2E", fontWeight: "600" },
   pickedText: { marginTop: 8, fontSize: 12, color: "#444" },
