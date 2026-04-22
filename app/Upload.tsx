@@ -215,6 +215,13 @@ export default function UploadScreen() {
                     ) : null}
                   </>
                 ) : null}
+                <input
+                  id="file-input"
+                  type="file"
+                  style={{ display: "none" }}
+                  onChange={handleFileChange}
+                  accept={activeTab === "videos" ? "video/*" : "*/*"}
+                />
               </label>
             ),
             default: (
@@ -345,17 +352,6 @@ export default function UploadScreen() {
           <Ionicons name="person-outline" size={28} color="#111" />
         </Pressable>
       </View>
-
-      {/* Hidden file input for web */}
-      {Platform.OS === "web" && (
-        <input
-          id="file-input"
-          type="file"
-          style={{ display: "none" }}
-          onChange={handleFileChange}
-          accept={activeTab === "videos" ? "video/*" : "*/*"}
-        />
-      )}
     </View>
   );
 }
