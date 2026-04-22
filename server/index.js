@@ -73,8 +73,15 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     }
 
     // Ask the model for STRICT JSON
+    const modelMap = {
+      "gpt-5.1": "gpt-3.5-turbo",
+      "gpt-5.2": "gpt-4o",
+    };
+    const selectedModel = (req.body.model || "gpt-5.1").toString();
+    const model = modelMap[selectedModel] || "gpt-3.5-turbo";
+
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model,
       messages: [
         {
           role: "system",

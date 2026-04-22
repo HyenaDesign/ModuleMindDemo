@@ -1,4 +1,4 @@
-type UploadInput = { uri: string; name: string; mimeType: string };
+type UploadInput = { uri: string; name: string; mimeType: string; model: string };
 
 // Load from environment variable (set in .env file)
 // Each collaborator can set their own server URL in .env
@@ -6,6 +6,7 @@ const UPLOAD_URL = process.env.EXPO_PUBLIC_UPLOAD_URL || "http://localhost:4000/
 
 export async function uploadFile(file: UploadInput) {
   const form = new FormData();
+  form.append("model", file.model);
   
   // On web, uri is a File/Blob; on mobile it's a file:// path
   if (typeof file.uri === 'string' && file.uri.startsWith('file://')) {

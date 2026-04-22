@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Alert,
   Platform,
@@ -58,6 +58,7 @@ export default function UploadScreen() {
 
   // ✅ move debug state INSIDE the component
   const [debugJson, setDebugJson] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const canContinue = useMemo(() => {
     return Boolean(selectedModel && picked) && status !== "uploading";
@@ -83,6 +84,11 @@ export default function UploadScreen() {
     setDebugJson("");
     setErrorMsg(null);
 
+    if (Platform.OS === "web") {
+      fileInputRef.current?.click();
+      return;
+    }
+
     try {
       const result = await DocumentPicker.getDocumentAsync({
         multiple: false,
@@ -101,7 +107,6 @@ export default function UploadScreen() {
 
       const asset = result.assets[0];
       setPicked(asset);
-
       setStatus("idle");
     } catch (e: any) {
       setErrorMsg(e?.message ?? "Failed to pick file");
@@ -131,6 +136,7 @@ export default function UploadScreen() {
         uri: picked.uri,
         name: picked.name ?? "upload.bin",
         mimeType: picked.mimeType ?? "application/octet-stream",
+        model: selectedModel,
       });
 
       setStatus("success");
@@ -192,63 +198,37 @@ export default function UploadScreen() {
             </Pressable>
           </View>
 
-          {Platform.select({
-            web: (
-              <label htmlFor="file-input" style={styles.uploadInner as any}>
-                <Text style={styles.uploadText}>
-                  {activeTab === "videos" ? "Upload videos" : "Upload files"}
-                </Text>
+          <Pressable onPress={pickSomething} style={styles.uploadInner}>
+            <Text style={styles.uploadText}>
+              {activeTab === "videos" ? "Upload videos" : "Upload files"}
+            </Text>
 
-                {picked?.name ? (
-                  <Text style={styles.pickedText}>{picked.name}</Text>
-                ) : null}
+            {picked?.name ? (
+              <Text style={styles.pickedText}>{picked.name}</Text>
+            ) : null}
 
-                {status === "uploading" ? (
-                  <Text style={styles.statusText}>Uploading…</Text>
-                ) : status === "success" ? (
-                  <Text style={styles.statusText}>Upload successful ✅</Text>
-                ) : status === "failed" ? (
-                  <>
-                    <Text style={styles.statusText}>Upload failed ❌</Text>
-                    {errorMsg ? (
-                      <Text style={styles.errorText}>{errorMsg}</Text>
-                    ) : null}
-                  </>
+            {status === "uploading" ? (
+              <Text style={styles.statusText}>Uploading…</Text>
+            ) : status === "success" ? (
+              <Text style={styles.statusText}>Upload successful ✅</Text>
+            ) : status === "failed" ? (
+              <>
+                <Text style={styles.statusText}>Upload failed ❌</Text>
+                {errorMsg ? (
+                  <Text style={styles.errorText}>{errorMsg}</Text>
                 ) : null}
-                <input
-                  id="file-input"
-                  type="file"
-                  style={{ display: "none" }}
-                  onChange={handleFileChange}
-                  accept={activeTab === "videos" ? "video/*" : "*/*"}
-                />
-              </label>
-            ),
-            default: (
-              <Pressable onPress={pickSomething} style={styles.uploadInner}>
-                <Text style={styles.uploadText}>
-                  {activeTab === "videos" ? "Upload videos" : "Upload files"}
-                </Text>
-
-                {picked?.name ? (
-                  <Text style={styles.pickedText}>{picked.name}</Text>
-                ) : null}
-
-                {status === "uploading" ? (
-                  <Text style={styles.statusText}>Uploading…</Text>
-                ) : status === "success" ? (
-                  <Text style={styles.statusText}>Upload successful ✅</Text>
-                ) : status === "failed" ? (
-                  <>
-                    <Text style={styles.statusText}>Upload failed ❌</Text>
-                    {errorMsg ? (
-                      <Text style={styles.errorText}>{errorMsg}</Text>
-                    ) : null}
-                  </>
-                ) : null}
-              </Pressable>
-            ),
-          })}
+              </>
+            ) : null}
+          </Pressable>
+          {Platform.OS === "web" && (
+            <input
+              ref={fileInputRef}
+              type="file"
+              style={{ display: "none" }}
+              onChange={handleFileChange}
+              accept={activeTab === "videos" ? "video/*" : "*/*"}
+            />
+          )}
         </View>
       </View>
 
@@ -443,6 +423,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 14,
+    minHeight: 180,
+    cursor: "pointer",
   },
   uploadText: { color: "#2E2E2E", fontWeight: "600" },
   pickedText: { marginTop: 8, fontSize: 12, color: "#444" },
@@ -463,6 +445,7 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 2,
     borderColor: "transparent",
+    cursor: "pointer",
   },
   modelCardSelected: {
     borderColor: "#05C925",
