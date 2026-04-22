@@ -73,9 +73,9 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     }
 
     // Ask the model for STRICT JSON
-    const response = await openai.responses.create({
-      model: "gpt-5.2",
-      input: [
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
         {
           role: "system",
           content:
@@ -95,7 +95,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
       ],
     });
 
-    const raw = response.output_text;
+    const raw = completion.choices[0].message.content;
 
     let quiz;
     try {
