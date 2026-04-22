@@ -3,12 +3,12 @@ import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
-  Alert,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
+    Alert,
+    Platform,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { uploadFile } from "../src/services/upload";
 
@@ -65,27 +65,33 @@ export default function UploadScreen() {
 
   async function pickSomething() {
     setDebugJson("");
-
-    const result = await DocumentPicker.getDocumentAsync({
-      multiple: false,
-      copyToCacheDirectory: true,
-      type:
-        activeTab === "videos"
-          ? Platform.select({
-              ios: "public.movie",
-              android: "video/*",
-              default: "*/*",
-            })
-          : "*/*",
-    });
-
-    if (result.canceled) return;
-
-    const asset = result.assets[0];
-    setPicked(asset);
-
-    setStatus("idle");
     setErrorMsg(null);
+
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        multiple: false,
+        copyToCacheDirectory: true,
+        type:
+          activeTab === "videos"
+            ? Platform.select({
+                ios: "public.movie",
+                android: "video/*",
+                default: "*/*",
+              })
+            : "*/*",
+      });
+
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+      setPicked(asset);
+
+      setStatus("idle");
+    } catch (e: any) {
+      setErrorMsg(e?.message ?? "Failed to pick file");
+      setDebugJson(e?.message ?? "Failed to pick file");
+      console.error("DocumentPicker error:", e);
+    }
   }
 
   async function handleContinue() {
@@ -165,7 +171,7 @@ export default function UploadScreen() {
                   activeTab === "videos" ? styles.tabTextActive : null,
                 ]}
               >
-                {activeTab === "videos" ? "Upload videos" : "Upload files"}
+                {activeTab === "videos" ? "Videos" : "Files"}
               </Text>
             </Pressable>
           </View>
