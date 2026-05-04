@@ -1,155 +1,73 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-
-type Question = {
-  id: string;
-  type: "multiple_choice" | "open";
-  question: string;
-  options?: string[];
-  answer?: string;
-  explanation?: string;
-};
+import { useEffect, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  loadQuizResult,
+  normalizeQuizQuestions,
+  type PreviewQuestion,
+} from "../src/services/quizResult";
 
 export default function ModulePreviewScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  const resultJson =
-    typeof params.result === "string" ? params.result : null;
+  const resultJson = typeof params.result === "string" ? params.result : null;
 
-  const questions: Question[] = useMemo(() => {
-    if (resultJson) {
-      try {
-        const parsed = JSON.parse(resultJson);
-        
-        let quizData = null;
-        if (Array.isArray(parsed)) {
-          quizData = parsed;
-        } else if (Array.isArray(parsed?.questions)) {
-          quizData = parsed.questions;
-        } else if (Array.isArray(parsed?.quiz)) {
-          quizData = parsed.quiz;
-        } else if (Array.isArray(parsed?.quiz?.questions)) {
-          quizData = parsed.quiz.questions;
-        } else if (parsed?.quiz && typeof parsed.quiz === 'object') {
-          quizData = Array.isArray(parsed.quiz) ? parsed.quiz : [parsed.quiz];
-        }
+  const [questions, setQuestions] = useState<PreviewQuestion[]>([]);
+  const [index, setIndex] = useState(0);
+  const safeIndex = Math.min(index, Math.max(questions.length - 1, 0));
+  const current = questions[safeIndex];
 
-        // Transform quiz data to Question format
-        if (quizData && Array.isArray(quizData) && quizData.length > 0) {
-          console.log("Quiz data:", quizData);
-          console.log("First question:", quizData[0]);
-          return quizData.map((q, idx) => {
-            let answer = q.answer || q.correct_answer || q.correctAnswer || "";
-            if (q.answerIndex !== undefined && q.answerIndex !== null) {
-              const choices = q.choices || q.options || q.answers || [];
-              answer = choices[q.answerIndex] || "";
-            }
-            return {
-              id: q.id || `q${idx + 1}`,
-              type: q.type || (q.choices ? "multiple_choice" : "open"),
-              question: q.question || q.text || "",
-              options: q.choices || q.options || q.answers || [],
-              answer: answer,
-              explanation: q.explanation || q.explanations || "",
-            };
-          });
-        }
-      } catch (e) {
-        console.log("Parse error:", e);
-      }
-    }
-
-    // ✅ Mock fallback (so screen works without backend)
-    return [
-      {
-        id: "q1",
-        type: "multiple_choice",
-        question: "What is the center of a circle called?",
-        options: ["Radius", "Diameter", "Center point", "Arc"],
-        answer: "Center point",
-        explanation:
-          "The center is the point equally distant from all points on the circle.",
-      },
-      {
-        id: "q2",
-        type: "open",
-        question:
-          "Explain why STEM subjects require practice instead of only reading.",
-        answer:
-          "Because you need to apply concepts, solve problems and receive feedback.",
-      },
-    ];
+  useEffect(() => {
+    setQuestions(normalizeQuizQuestions(loadQuizResult(resultJson)));
+    setIndex(0);
   }, [resultJson]);
 
-  const [index, setIndex] = useState(0);
-  const current = questions[index];
-
-  const canGoNext = index < questions.length - 1;
-  const canGoPrev = index > 0;
+  const canGoNext = safeIndex < questions.length - 1;
+  const canGoPrev = safeIndex > 0;
 
   if (!current) {
     return (
-      <View
-        style={[
-          styles.container,
-          { paddingTop: 140, alignItems: "center" },
-        ]}
-      >
-        <Text style={{ fontWeight: "700" }}>
-          No questions found.
+      <View style={[styles.container, styles.emptyContainer]}>
+        <Text style={styles.emptyTitle}>No AI-generated questions found.</Text>
+        <Text style={styles.emptyText}>
+          Upload a readable PDF, DOCX, or TXT file first.
         </Text>
-        <Pressable
-          style={{ marginTop: 16 }}
-          onPress={() => router.back()}
-        >
-          <Text
-            style={{
-              color: "#111",
-              textDecorationLine: "underline",
-            }}
-          >
-            Back
-          </Text>
+        <Pressable style={styles.emptyBack} onPress={() => router.back()}>
+          <Text style={styles.emptyBackText}>Back</Text>
         </Pressable>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Top right profile */}
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.containerContent}
+    >
       <View style={styles.profileCircle}>
         <Text style={styles.profileText}>P</Text>
       </View>
 
-      {/* Top left edit icon (goes back for now) */}
-      <Pressable
-        style={styles.editButton}
-        onPress={() => router.back()}
-      >
-        <Text style={styles.editIcon}>✎</Text>
+      <Pressable style={styles.editButton} onPress={() => router.back()}>
+        <Text style={styles.editIcon}>Edit</Text>
       </Pressable>
 
       <View style={styles.card}>
         <Text style={styles.progressText}>
-          Question {index + 1} / {questions.length}
+          Question {safeIndex + 1} / {questions.length}
         </Text>
 
         <View style={styles.questionCard}>
-          <Text style={styles.questionText}>
-            {current.question}
-          </Text>
+          <Text style={styles.questionText}>{current.question}</Text>
 
-          {current.type === "multiple_choice" &&
-          current.options?.length ? (
+          {current.type === "multiple_choice" && current.options?.length ? (
             <View style={styles.optionsBlock}>
-              {current.options.map((opt) => {
+              {current.options.map((opt, optIndex) => {
                 const isCorrect = opt === current.answer;
                 return (
                   <View
-                    key={opt}
+                    key={`${opt}-${optIndex}`}
                     style={[
                       styles.optionRow,
                       isCorrect && styles.optionRowCorrect,
@@ -169,9 +87,9 @@ export default function ModulePreviewScreen() {
                     >
                       {opt}
                     </Text>
-                    {isCorrect && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
+                    {isCorrect ? (
+                      <Text style={styles.checkmark}>Correct</Text>
+                    ) : null}
                   </View>
                 );
               })}
@@ -180,16 +98,10 @@ export default function ModulePreviewScreen() {
 
           {current.answer ? (
             <View style={styles.answerBox}>
-              <Text style={styles.answerLabel}>
-                Suggested answer
-              </Text>
-              <Text style={styles.answerText}>
-                {current.answer}
-              </Text>
+              <Text style={styles.answerLabel}>Suggested answer</Text>
+              <Text style={styles.answerText}>{current.answer}</Text>
               {current.explanation ? (
-                <Text style={styles.explainText}>
-                  {current.explanation}
-                </Text>
+                <Text style={styles.explainText}>{current.explanation}</Text>
               ) : null}
             </View>
           ) : null}
@@ -197,48 +109,31 @@ export default function ModulePreviewScreen() {
 
         <View style={styles.btnRow}>
           <Pressable
-            style={[
-              styles.btn,
-              !canGoPrev && styles.btnDisabled,
-            ]}
+            style={[styles.btn, !canGoPrev && styles.btnDisabled]}
             disabled={!canGoPrev}
-            onPress={() =>
-              setIndex((i) => Math.max(0, i - 1))
-            }
+            onPress={() => setIndex((i) => Math.max(0, i - 1))}
           >
             <Text style={styles.btnText}>Back</Text>
           </Pressable>
 
           <Pressable
-            style={[
-              styles.btn,
-              !canGoNext && styles.btnDisabled,
-            ]}
+            style={[styles.btn, !canGoNext && styles.btnDisabled]}
             disabled={!canGoNext}
             onPress={() =>
-              setIndex((i) =>
-                Math.min(questions.length - 1, i + 1)
-              )
+              setIndex((i) => Math.min(questions.length - 1, i + 1))
             }
           >
-            <Text style={styles.btnText}>
-              Continue
-            </Text>
+            <Text style={styles.btnText}>Continue</Text>
           </Pressable>
         </View>
 
         <View style={styles.bottomActions}>
-          <Pressable
-            style={styles.primaryBtn}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.primaryText}>
-              Back to upload
-            </Text>
+          <Pressable style={styles.primaryBtn} onPress={() => router.back()}>
+            <Text style={styles.primaryText}>Back to upload</Text>
           </Pressable>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -246,7 +141,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+  containerContent: {
+    minHeight: "100%",
     paddingBottom: 90,
+  },
+  emptyContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 140,
+    alignItems: "center",
+  },
+  emptyTitle: {
+    fontWeight: "700",
+    color: "#111",
+  },
+  emptyText: {
+    marginTop: 8,
+    color: "#555",
+    textAlign: "center",
+  },
+  emptyBack: {
+    marginTop: 16,
+  },
+  emptyBackText: {
+    color: "#111",
+    textDecorationLine: "underline",
   },
 
   profileCircle: {
@@ -267,15 +186,16 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 52,
     left: 18,
-    width: 32,
+    minWidth: 48,
     height: 32,
     borderRadius: 8,
     backgroundColor: "#E5E5E5",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 10,
+    paddingHorizontal: 8,
   },
-  editIcon: { fontSize: 16, color: "#111" },
+  editIcon: { fontSize: 12, color: "#111", fontWeight: "700" },
 
   card: {
     marginTop: 120,
@@ -344,7 +264,7 @@ const styles = StyleSheet.create({
   },
 
   checkmark: {
-    fontSize: 18,
+    fontSize: 12,
     color: "#05C925",
     fontWeight: "700",
   },

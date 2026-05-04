@@ -1,50 +1,49 @@
-# Welcome to your Expo app 👋
+# ModuleMindDemo
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo web app plus a Node upload API that turns PDF, DOCX, or TXT files into quiz questions.
 
-## Get started
+## Get Started
 
-1. Install dependencies
+1. Install dependencies.
 
    ```bash
    npm install
+   cd server
+   npm install
+   cd ..
    ```
 
-2. Start the app
+2. Configure environment variables.
 
    ```bash
-   npx expo start
+   cp .env.example .env
+   cp server/.env.example server/.env
    ```
 
-In the output, you'll find options to open the app in a
+   Set `server/.env` to your OpenAI API key. Set root `.env` to the public upload endpoint used by the web app.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+3. Start the API.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+   ```bash
+   node server/index.js
+   ```
 
-## Get a fresh project
+4. Start the app.
 
-When you're ready, run:
+   ```bash
+   npm run web
+   ```
+
+## GitHub Pages
+
+GitHub Pages can host the static Expo frontend, but it cannot host the Node/OpenAI upload API. Deploy `server/` to a backend host such as Vercel first, set `EXPO_PUBLIC_UPLOAD_URL` to that public HTTPS `/upload` URL, then build:
 
 ```bash
-npm run reset-project
+npm run build
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Publish the generated `docs/` folder with GitHub Pages. The app includes `docs/.nojekyll` so Expo's `_expo` assets are served correctly.
 
-## Learn more
+## Quiz Flow
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The upload screen sends the selected file and model to the API. The API returns `{ questions: [...] }`, and the module preview screen reads that AI-generated result from browser session storage so longer quizzes do not break web route URLs.

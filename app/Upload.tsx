@@ -6,10 +6,12 @@ import {
   Alert,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { saveQuizResult } from "../src/services/quizResult";
 import { uploadFile } from "../src/services/upload";
 
 type ModelOption = {
@@ -21,24 +23,6 @@ type ModelOption = {
 const MODELS: ModelOption[] = [
   { id: "gpt-5.1", title: "OpenAI ChatGPT", version: "5.1" },
   { id: "gpt-5.2", title: "OpenAI ChatGPT", version: "5.2" },
-];
-
-const SAMPLE_QUESTIONS = [
-  {
-    id: "1",
-    type: "multiple_choice" as const,
-    question: "What is the capital of France?",
-    options: ["London", "Berlin", "Paris", "Madrid"],
-    answer: "Paris",
-    explanation: "Paris is the capital and most populous city of France."
-  },
-  {
-    id: "2",
-    type: "open" as const,
-    question: "Explain the concept of recursion in programming.",
-    answer: "Recursion is a programming technique where a function calls itself to solve a problem.",
-    explanation: "It's useful for problems that can be broken down into smaller, similar subproblems."
-  }
 ];
 
 type UploadStatus = "idle" | "uploading" | "success" | "failed";
@@ -139,13 +123,15 @@ export default function UploadScreen() {
         model: selectedModel,
       });
 
+      const resultJson = saveQuizResult(result);
+
       setStatus("success");
       setDebugJson(JSON.stringify(result, null, 2));
       Alert.alert("Upload successful ✅");
       console.log("Upload result:", result);
       router.push({
         pathname: "/module-preview",
-        params: { result: JSON.stringify(result) },
+        params: { result: resultJson },
       });
 
     } catch (e: any) {
@@ -157,7 +143,11 @@ export default function UploadScreen() {
   }
 
   return (
-    <View style={styles.screen}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.screenContent}
+      keyboardShouldPersistTaps="handled"
+    >
       {/* Top right profile */}
       <View style={styles.topBar}>
         <View style={{ flex: 1 }} />
@@ -289,33 +279,6 @@ export default function UploadScreen() {
         </View>
       ) : null}
 
-      {/* Live Demo */}
-      <View style={styles.demoSection}>
-        <Text style={styles.demoTitle}>Live Demo</Text>
-        <Text style={styles.demoSubtitle}>See what your uploaded content looks like</Text>
-        <View style={styles.demoQuestions}>
-          {SAMPLE_QUESTIONS.map((q, index) => (
-            <View key={q.id} style={styles.demoQuestion}>
-              <Text style={styles.demoQuestionText}>
-                {index + 1}. {q.question}
-              </Text>
-              {q.type === "multiple_choice" && q.options ? (
-                <View style={styles.demoOptions}>
-                  {q.options.map((opt, i) => (
-                    <Text key={i} style={styles.demoOption}>
-                      {String.fromCharCode(65 + i)}. {opt}
-                    </Text>
-                  ))}
-                </View>
-              ) : (
-                <Text style={styles.demoAnswer}>Answer: {q.answer}</Text>
-              )}
-              <Text style={styles.demoExplanation}>Explanation: {q.explanation}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
       {/* Bottom nav */}
       <View style={styles.bottomNav}>
         <Pressable style={styles.navItem}>
@@ -332,7 +295,7 @@ export default function UploadScreen() {
           <Ionicons name="person-outline" size={28} color="#111" />
         </Pressable>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -340,8 +303,11 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: "#FFF",
+  },
+  screenContent: {
     paddingHorizontal: 18,
     paddingTop: 40,
+    minHeight: "100%",
   },
 
   topBar: {
@@ -494,61 +460,8 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
 
-  demoSection: {
-    marginTop: 20,
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: "#FFF",
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-  },
-  demoTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111",
-    marginBottom: 4,
-  },
-  demoSubtitle: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 16,
-  },
-  demoQuestions: {
-    gap: 16,
-  },
-  demoQuestion: {
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: "#F9F9F9",
-  },
-  demoQuestionText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#222",
-    marginBottom: 8,
-  },
-  demoOptions: {
-    marginBottom: 8,
-  },
-  demoOption: {
-    fontSize: 14,
-    color: "#444",
-    marginBottom: 4,
-  },
-  demoAnswer: {
-    fontSize: 14,
-    color: "#1ECB7F",
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  demoExplanation: {
-    fontSize: 14,
-    color: "#666",
-    fontStyle: "italic",
-  },
-
   bottomNav: {
-    marginTop: "auto",
+    marginTop: 24,
     paddingTop: 14,
     paddingBottom: 16,
     flexDirection: "row",

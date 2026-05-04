@@ -1,10 +1,31 @@
 type UploadInput = { uri: string; name: string; mimeType: string; model: string };
 
-// Load from environment variable (set in .env file)
-// Each collaborator can set their own server URL in .env
-const UPLOAD_URL = process.env.EXPO_PUBLIC_UPLOAD_URL || "http://localhost:4000/upload";
+const LOCAL_UPLOAD_URL = "http://localhost:4000/upload";
+const UPLOAD_URL = process.env.EXPO_PUBLIC_UPLOAD_URL || LOCAL_UPLOAD_URL;
+
+function assertUploadUrlIsReachableForThisHost() {
+  if (typeof window === "undefined") return;
+
+  const pageHost = window.location.hostname;
+  const uploadHost = new URL(UPLOAD_URL, window.location.origin).hostname;
+  const isLocalPage = ["localhost", "127.0.0.1", ""].includes(pageHost);
+  const isPrivateUploadHost =
+    uploadHost === "localhost" ||
+    uploadHost === "127.0.0.1" ||
+    uploadHost.startsWith("10.") ||
+    uploadHost.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(uploadHost);
+
+  if (!isLocalPage && isPrivateUploadHost) {
+    throw new Error(
+      "The upload server must be a public HTTPS URL for the live web app. Set EXPO_PUBLIC_UPLOAD_URL before building for GitHub Pages."
+    );
+  }
+}
 
 export async function uploadFile(file: UploadInput) {
+  assertUploadUrlIsReachableForThisHost();
+
   const form = new FormData();
   form.append("model", file.model);
   
