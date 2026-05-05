@@ -1,7 +1,7 @@
 type UploadInput = { uri: string; name: string; mimeType: string; model: string };
 
-const LOCAL_UPLOAD_URL = "http://localhost:4000/upload";
-const UPLOAD_URL = process.env.EXPO_PUBLIC_UPLOAD_URL || LOCAL_UPLOAD_URL;
+const RENDER_UPLOAD_URL = "https://moduleminddemo.onrender.com/upload";
+const UPLOAD_URL = process.env.EXPO_PUBLIC_UPLOAD_URL || RENDER_UPLOAD_URL;
 
 function assertUploadUrlIsReachableForThisHost() {
   if (typeof window === "undefined") return;

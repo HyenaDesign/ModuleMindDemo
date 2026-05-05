@@ -36,7 +36,7 @@ Expo web app plus a Node upload API that turns PDF, DOCX, or TXT files into quiz
 
 ## GitHub Pages
 
-GitHub Pages can host the static Expo frontend, but it cannot host the Node/OpenAI upload API. Deploy `server/` to a backend host such as Vercel first, set `EXPO_PUBLIC_UPLOAD_URL` to that public HTTPS `/upload` URL, then build:
+GitHub Pages can host the static Expo frontend, but it cannot host the Node/OpenAI upload API. The frontend is configured to call the Render API at `https://moduleminddemo.onrender.com/upload`. Set `EXPO_PUBLIC_UPLOAD_URL` only if you deploy the API somewhere else, then build:
 
 ```bash
 npm run build
